@@ -1,5 +1,7 @@
 import streamlit as st
 import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, Flatten, Dense
 import numpy as np
 from PIL import Image
 import os
@@ -20,29 +22,39 @@ if not os.path.exists(MODEL_PATH):
     st.info("Downloading model from Google Drive, please wait...")
     gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
 
-# ---------------- LOAD MODEL ----------------
+# ---------------- DEFINE MODEL ARCHITECTURE ----------------
+@st.cache_resource(show_spinner=True)
+def create_model():
+    model = Sequential([
+        Conv2D(32, (3,3), activation='relu', input_shape=(128,128,3)),
+        MaxPooling2D(2,2),
+        Conv2D(64, (3,3), activation='relu'),
+        MaxPooling2D(2,2),
+        Flatten(),
+        Dense(128, activation='relu'),
+        Dense(38, activation='softmax')  # 38 classes for your plant disease dataset
+    ])
+    return model
+
+# ---------------- LOAD MODEL WEIGHTS ----------------
 @st.cache_resource(show_spinner=True)
 def load_model_safe():
-    if not os.path.exists(MODEL_PATH):
-        st.error("Model file not found! Make sure the file exists or is accessible via Google Drive.")
-        st.stop()
-    return tf.keras.models.load_model(MODEL_PATH)
+    model = create_model()
+    model.load_weights(MODEL_PATH)
+    return model
 
 model = load_model_safe()
 
 # ---------------- HELPER FUNCTIONS ----------------
 def model_prediction(test_image_path):
-    image = tf.keras.preprocessing.image.load_img(test_image_path, target_size=(128, 128))
+    image = tf.keras.preprocessing.image.load_img(test_image_path, target_size=(128,128))
     input_arr = tf.keras.preprocessing.image.img_to_array(image)
     input_arr = np.array([input_arr])
     predictions = model.predict(input_arr)
     return np.argmax(predictions)
 
 def crop_recommendation(n, p, k, temp, hum, ph, rainfall):
-    if n > 50 and p > 50 and k > 50:
-        return "Wheat"
-    else:
-        return "Rice"
+    return "Wheat" if n>50 and p>50 and k>50 else "Rice"
 
 def fertilizer_recommendation(n, p, k):
     n_msg = "Nitrogen fertilizer recommended" if n < 50 else "Nitrogen level sufficient"
@@ -92,16 +104,11 @@ elif app_mode == "PLANT DISEASE DETECTION":
         st.image(test_image, use_column_width=True)
         if st.button("Predict Disease"):
             st.info("Predicting...")
-
-            # Temporarily save uploaded file
             temp_path = os.path.join(BASE_DIR, "test", test_image.name)
             with open(temp_path, "wb") as f:
                 f.write(test_image.getbuffer())
 
-            # Predict
             result_index = model_prediction(temp_path)
-
-            # Delete temp file
             os.remove(temp_path)
 
             class_names = ['Apple___Apple_scab', 'Apple___Black_rot', 'Apple___Cedar_apple_rust', 'Apple___healthy',
