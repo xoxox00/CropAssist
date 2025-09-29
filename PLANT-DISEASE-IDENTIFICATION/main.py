@@ -3,17 +3,28 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 import os
+import requests
+import tempfile
 
 # ---------- Base Directory ----------
-BASE_DIR = os.path.dirname(__file__)  # folder containing main.py
+BASE_DIR = os.path.dirname(__file__)
 
 # ---------- Helper Functions ----------
-def model_prediction(uploaded_file):
-    # Load model
-    model_path = os.path.join(BASE_DIR, "trained_plant_disease_model.keras")
-    model = tf.keras.models.load_model(model_path)
+def load_model_from_url(url):
+    """Download and load Keras model from a URL"""
+    r = requests.get(url)
+    tmp_file = tempfile.NamedTemporaryFile(delete=False)
+    tmp_file.write(r.content)
+    tmp_file.close()
+    model = tf.keras.models.load_model(tmp_file.name)
+    return model
 
-    # Save uploaded file temporarily in test folder
+def model_prediction(uploaded_file):
+    # Load model (hosted on GitHub or cloud)
+    model_url = "YOUR_RAW_GITHUB_MODEL_LINK"  # replace with your model raw link
+    model = load_model_from_url(model_url)
+
+    # Save uploaded file in test folder
     test_folder = os.path.join(BASE_DIR, "test")
     os.makedirs(test_folder, exist_ok=True)
     temp_path = os.path.join(test_folder, uploaded_file.name)
@@ -28,6 +39,7 @@ def model_prediction(uploaded_file):
     return np.argmax(predictions)
 
 def crop_recommendation(n, p, k, temp, hum, ph, rainfall):
+    # Placeholder logic
     if n>50 and p>50 and k>50:
         return "Wheat"
     else:
@@ -52,7 +64,6 @@ app_mode = st.sidebar.selectbox("Select Page", [
 if app_mode == "HOME":
     st.markdown("<h1 style='text-align: center;'>Welcome to FarmAssistX</h1>", unsafe_allow_html=True)
 
-    # Open Diseases.png from test folder
     img_path = os.path.join(BASE_DIR, "test", "Diseases.png")
     if os.path.exists(img_path):
         img = Image.open(img_path)
@@ -79,8 +90,16 @@ elif app_mode == "CROP RECOMMENDATION":
 elif app_mode == "PLANT DISEASE DETECTION":
     st.header("DISEASE RECOGNITION")
     test_image = st.file_uploader("Choose an Image:")
+
     if st.button("Show Image") and test_image:
-        st.image(test_image, use_column_width=True)
+        # Save uploaded file in test folder
+        test_folder = os.path.join(BASE_DIR, "test")
+        os.makedirs(test_folder, exist_ok=True)
+        temp_path = os.path.join(test_folder, test_image.name)
+        with open(temp_path, "wb") as f:
+            f.write(test_image.getbuffer())
+        st.image(temp_path, use_column_width=True)
+
     if st.button("Predict") and test_image:
         st.snow()
         result_index = model_prediction(test_image)
