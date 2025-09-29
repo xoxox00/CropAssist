@@ -2,6 +2,7 @@ import streamlit as st
 import tensorflow as tf
 import numpy as np
 from PIL import Image
+import os
 
 # ---------- Helper Functions ----------
 def model_prediction(test_image):
@@ -13,14 +14,13 @@ def model_prediction(test_image):
     return np.argmax(predictions)
 
 def crop_recommendation(n, p, k, temp, hum, ph, rainfall):
-    # Placeholder crop recommendation logic
+    # Replace this logic with your trained crop recommendation model
     if n > 50 and p > 50 and k > 50:
         return "Wheat"
     else:
         return "Rice"
 
 def fertilizer_recommendation(n, p, k):
-    # Simple rule-based recommendation
     if n < 50:
         n_fert = "Nitrogen fertilizer recommended"
     else:
@@ -47,8 +47,13 @@ app_mode = st.sidebar.selectbox("Select Page", [
 # ---------- HOME PAGE ----------
 if app_mode == "HOME":
     st.markdown("<h1 style='text-align: center;'>Welcome to FarmAssistX</h1>", unsafe_allow_html=True)
-    img = Image.open("test/Diseases.png")  # ✅ Corrected path
-    st.image(img)
+
+    img_path = "PLANT-DISEASE-IDENTIFICATION/test/Diseases.png"  # ✅ Corrected path
+    if os.path.exists(img_path):
+        img = Image.open(img_path)
+        st.image(img)
+    else:
+        st.warning("⚠️ Diseases.png not found in test folder. Please check path.")
 
 # ---------- CROP RECOMMENDATION ----------
 elif app_mode == "CROP RECOMMENDATION":
@@ -63,7 +68,7 @@ elif app_mode == "CROP RECOMMENDATION":
 
     if st.button("Predict Crop"):
         recommended_crop = crop_recommendation(nitrogen, phosphorus, potassium, temperature, humidity, ph, rainfall)
-        st.success(f"Recommended Crop: {recommended_crop}")
+        st.success(f"🌱 Recommended Crop: {recommended_crop}")
 
 # ---------- PLANT DISEASE DETECTION ----------
 elif app_mode == "PLANT DISEASE DETECTION":
@@ -90,7 +95,7 @@ elif app_mode == "PLANT DISEASE DETECTION":
             'Tomato___Target_Spot', 'Tomato___Tomato_Yellow_Leaf_Curl_Virus', 'Tomato___Tomato_mosaic_virus',
             'Tomato___healthy'
         ]
-        st.success(f"Model is Predicting it's a {class_name[result_index]}")
+        st.success(f"🤖 Model is Predicting it's a **{class_name[result_index]}**")
 
 # ---------- FERTILIZER RECOMMENDATION ----------
 elif app_mode == "FERTILIZER RECOMMENDATION":
@@ -101,6 +106,6 @@ elif app_mode == "FERTILIZER RECOMMENDATION":
 
     if st.button("Recommend Fertilizer"):
         n_msg, p_msg, k_msg = fertilizer_recommendation(nitrogen, phosphorus, potassium)
-        st.success(n_msg)
-        st.success(p_msg)
-        st.success(k_msg)
+        st.success("🌿 " + n_msg)
+        st.success("🌿 " + p_msg)
+        st.success("🌿 " + k_msg)
