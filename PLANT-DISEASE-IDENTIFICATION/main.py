@@ -6,17 +6,22 @@ import os
 from tensorflow.keras.preprocessing import image as keras_image
 
 # ---------- Base Directory ----------
-BASE_DIR = os.path.dirname(__file__)
+BASE_DIR = os.path.dirname(__file__)  # PLANT-DISEASE-IDENTIFICATION folder
 
 # ---------- Load Model ----------
 model_path = os.path.join(BASE_DIR, "trained_plant_disease_model", "model_weights.h5")
+model_path = os.path.abspath(model_path)
+
+# Debug: verify model path
+print("Model path:", model_path)
+
 model = tf.keras.models.load_model(model_path)
 
 # ---------- Helper Functions ----------
 def model_prediction(uploaded_file):
     """Predict plant disease from uploaded image"""
-    # Save uploaded image in test folder
-    test_folder = os.path.join(BASE_DIR, "test")
+    # Save uploaded image in test folder (one level up)
+    test_folder = os.path.join(BASE_DIR, "..", "test")
     os.makedirs(test_folder, exist_ok=True)
     temp_path = os.path.join(test_folder, uploaded_file.name)
     with open(temp_path, "wb") as f:
@@ -56,7 +61,8 @@ app_mode = st.sidebar.selectbox("Select Page", [
 if app_mode == "HOME":
     st.markdown("<h1 style='text-align: center;'>Welcome to FarmAssistX</h1>", unsafe_allow_html=True)
 
-    img_path = os.path.join(BASE_DIR, "test", "Diseases.png")
+    # Load Diseases.png from test folder (one level up)
+    img_path = os.path.join(BASE_DIR, "..", "test", "Diseases.png")
     if os.path.exists(img_path):
         img = Image.open(img_path)
         st.image(img)
@@ -84,7 +90,7 @@ elif app_mode == "PLANT DISEASE DETECTION":
     test_image = st.file_uploader("Choose an Image:")
 
     if st.button("Show Image") and test_image:
-        test_folder = os.path.join(BASE_DIR, "test")
+        test_folder = os.path.join(BASE_DIR, "..", "test")
         os.makedirs(test_folder, exist_ok=True)
         temp_path = os.path.join(test_folder, test_image.name)
         with open(temp_path, "wb") as f:
