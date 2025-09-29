@@ -118,8 +118,8 @@ elif app_mode == "PLANT DISEASE DETECTION":
 elif app_mode == "FERTILIZER RECOMMENDATION":
     st.header("FERTILIZER RECOMMENDATION")
     nitrogen = st.number_input("Nitrogen content in soil (N)", key='fert_n')
-    phosphorus = st.number_input("Phosphorus content in soil (P)', key='fert_p')
-    potassium = st.number_input("Potassium content in soil (K)', key='fert_k')
+    phosphorus = st.number_input("Phosphorus content in soil (P)", key='fert_p')
+    potassium = st.number_input("Potassium content in soil (K)", key='fert_k')
 
     if st.button("Recommend Fertilizer"):
         n_msg, p_msg, k_msg = fertilizer_recommendation(nitrogen, phosphorus, potassium)
