@@ -5,15 +5,23 @@ from PIL import Image
 import os
 
 # ---------- Base Directory ----------
-BASE_DIR = os.path.dirname(__file__)  # ensures paths work on Streamlit Cloud
+BASE_DIR = os.path.dirname(__file__)  # folder containing main.py
 
 # ---------- Helper Functions ----------
-def model_prediction(test_image):
-    # Load the model from the same folder as main.py
+def model_prediction(uploaded_file):
+    # Load model
     model_path = os.path.join(BASE_DIR, "trained_plant_disease_model.keras")
     model = tf.keras.models.load_model(model_path)
 
-    image = tf.keras.preprocessing.image.load_img(test_image, target_size=(128,128))
+    # Save uploaded file temporarily in test folder
+    test_folder = os.path.join(BASE_DIR, "test")
+    os.makedirs(test_folder, exist_ok=True)
+    temp_path = os.path.join(test_folder, uploaded_file.name)
+    with open(temp_path, "wb") as f:
+        f.write(uploaded_file.getbuffer())
+
+    # Load and preprocess image
+    image = tf.keras.preprocessing.image.load_img(temp_path, target_size=(128,128))
     input_arr = tf.keras.preprocessing.image.img_to_array(image)
     input_arr = np.array([input_arr])
     predictions = model.predict(input_arr)
@@ -44,13 +52,13 @@ app_mode = st.sidebar.selectbox("Select Page", [
 if app_mode == "HOME":
     st.markdown("<h1 style='text-align: center;'>Welcome to FarmAssistX</h1>", unsafe_allow_html=True)
 
-    # Open Diseases.png safely
-    img_path = os.path.join(BASE_DIR, "Diseases.png")
+    # Open Diseases.png from test folder
+    img_path = os.path.join(BASE_DIR, "test", "Diseases.png")
     if os.path.exists(img_path):
         img = Image.open(img_path)
         st.image(img)
     else:
-        st.warning("Diseases.png not found. Please add it to the same folder as main.py")
+        st.warning("Diseases.png not found in test folder.")
 
 # ---------- CROP RECOMMENDATION ----------
 elif app_mode == "CROP RECOMMENDATION":
@@ -90,7 +98,7 @@ elif app_mode == "PLANT DISEASE DETECTION":
                       'Tomato___Septoria_leaf_spot', 'Tomato___Spider_mites Two-spotted_spider_mite',
                       'Tomato___Target_Spot', 'Tomato___Tomato_Yellow_Leaf_Curl_Virus', 'Tomato___Tomato_mosaic_virus',
                       'Tomato___healthy']
-        st.success(f"Model is Predicting it's a {class_name[result_index]}")
+        st.success(f"Model predicts: {class_name[result_index]}")
 
 # ---------- FERTILIZER RECOMMENDATION ----------
 elif app_mode == "FERTILIZER RECOMMENDATION":
