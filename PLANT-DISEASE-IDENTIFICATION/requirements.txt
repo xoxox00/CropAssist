@@ -8,3 +8,5 @@ scikit_learn
 tensorflow
 keras
 opencv_python_headless
+gdown
+pillow
