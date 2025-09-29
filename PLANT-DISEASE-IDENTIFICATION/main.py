@@ -3,17 +3,28 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 import os
+import gdown
 
 # ---------------- CONFIG ----------------
 BASE_DIR = os.path.dirname(__file__)  # CropAssist/PLANT-DISEASE-IDENTIFICATION
 TRAINED_MODEL_FOLDER = os.path.join(BASE_DIR, "trained_plant_disease_model")
 MODEL_PATH = os.path.join(TRAINED_MODEL_FOLDER, "model.weights.h5")
 
-# ---------------- MODEL LOADING ----------------
+# Google Drive file ID
+MODEL_GDRIVE_ID = "16EUJfdr8yMbjRlyR_TKa7lJGNcki9pYC"
+MODEL_URL = f"https://drive.google.com/uc?id={MODEL_GDRIVE_ID}"
+
+# ---------------- DOWNLOAD MODEL IF MISSING ----------------
+if not os.path.exists(MODEL_PATH):
+    os.makedirs(TRAINED_MODEL_FOLDER, exist_ok=True)
+    st.info("Downloading model from Google Drive, please wait...")
+    gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
+
+# ---------------- LOAD MODEL ----------------
 @st.cache_resource(show_spinner=True)
 def load_model_safe():
     if not os.path.exists(MODEL_PATH):
-        st.error("Model file not found! Upload model.weights.h5 to trained_plant_disease_model folder.")
+        st.error("Model file not found! Make sure the file exists or is accessible via Google Drive.")
         st.stop()
     return tf.keras.models.load_model(MODEL_PATH)
 
