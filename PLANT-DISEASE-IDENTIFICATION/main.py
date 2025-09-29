@@ -7,24 +7,26 @@ import gdown
 
 # ---------------- CONFIG ----------------
 BASE_DIR = os.path.dirname(__file__)
-MODEL_FOLDER = os.path.join(BASE_DIR, "trained_plant_disease_model")
-os.makedirs(MODEL_FOLDER, exist_ok=True)
+TRAINED_MODEL_FOLDER = os.path.join(BASE_DIR, "trained_plant_disease_model")
+os.makedirs(TRAINED_MODEL_FOLDER, exist_ok=True)
 
-MODEL_PATH = os.path.join(MODEL_FOLDER, "model_weights.h5")
+MODEL_PATH = os.path.join(TRAINED_MODEL_FOLDER, "model_weights.h5")
 MODEL_GDRIVE_ID = "16EUJfdr8yMbjRlyR_TKa7lJGNcki9pYC"
 MODEL_URL = f"https://drive.google.com/uc?id={MODEL_GDRIVE_ID}"
 
-# Download model if missing
-if not os.path.exists(MODEL_PATH):
-    st.info("Downloading model, please wait...")
-    gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
+# ---------------- MODEL LOADING ----------------
+@st.cache_resource(show_spinner=True)
+def load_model_safe():
+    if not os.path.exists(MODEL_PATH):
+        st.info("Downloading model, please wait...")
+        gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
+    return tf.keras.models.load_model(MODEL_PATH)
 
-# Load the model
-model = tf.keras.models.load_model(MODEL_PATH)
+model = load_model_safe()
 
 # ---------------- HELPER FUNCTIONS ----------------
-def model_prediction(test_image):
-    image = tf.keras.preprocessing.image.load_img(test_image, target_size=(128, 128))
+def model_prediction(test_image_path):
+    image = tf.keras.preprocessing.image.load_img(test_image_path, target_size=(128, 128))
     input_arr = tf.keras.preprocessing.image.img_to_array(image)
     input_arr = np.array([input_arr])
     predictions = model.predict(input_arr)
@@ -54,12 +56,12 @@ app_mode = st.sidebar.selectbox("Select Page", [
 # ---------------- HOME ----------------
 if app_mode == "HOME":
     st.markdown("<h1 style='text-align: center;'>Welcome to FarmAssistX</h1>", unsafe_allow_html=True)
-    image_path = os.path.join(BASE_DIR, "test", "Diseases.png")  # Updated path
+    image_path = os.path.join(BASE_DIR, "test", "Diseases.png")
     if os.path.exists(image_path):
         img = Image.open(image_path)
         st.image(img)
     else:
-        st.warning("Diseases.png not found in test folder.")
+        st.warning("Diseases.png not found in the test folder.")
 
 # ---------------- CROP RECOMMENDATION ----------------
 elif app_mode == "CROP RECOMMENDATION":
@@ -84,7 +86,18 @@ elif app_mode == "PLANT DISEASE DETECTION":
         st.image(test_image, use_column_width=True)
         if st.button("Predict Disease"):
             st.info("Predicting...")
-            result_index = model_prediction(test_image)
+
+            # Temporarily save uploaded file
+            temp_path = os.path.join(BASE_DIR, "test", test_image.name)
+            with open(temp_path, "wb") as f:
+                f.write(test_image.getbuffer())
+
+            # Predict
+            result_index = model_prediction(temp_path)
+
+            # Delete temp file
+            os.remove(temp_path)
+
             class_names = ['Apple___Apple_scab', 'Apple___Black_rot', 'Apple___Cedar_apple_rust', 'Apple___healthy',
                            'Blueberry___healthy', 'Cherry_(including_sour)___Powdery_mildew',
                            'Cherry_(including_sour)___healthy', 'Corn_(maize)___Cercospora_leaf_spot Gray_leaf_spot',
@@ -105,8 +118,8 @@ elif app_mode == "PLANT DISEASE DETECTION":
 elif app_mode == "FERTILIZER RECOMMENDATION":
     st.header("FERTILIZER RECOMMENDATION")
     nitrogen = st.number_input("Nitrogen content in soil (N)", key='fert_n')
-    phosphorus = st.number_input("Phosphorus content in soil (P)", key='fert_p')
-    potassium = st.number_input("Potassium content in soil (K)", key='fert_k')
+    phosphorus = st.number_input("Phosphorus content in soil (P)', key='fert_p')
+    potassium = st.number_input("Potassium content in soil (K)', key='fert_k')
 
     if st.button("Recommend Fertilizer"):
         n_msg, p_msg, k_msg = fertilizer_recommendation(nitrogen, phosphorus, potassium)
