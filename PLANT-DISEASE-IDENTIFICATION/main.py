@@ -3,18 +3,23 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 import os
+import gdown
 
 # ---------------- CONFIG ----------------
-BASE_DIR = os.path.dirname(__file__)  # This points to PLANT-DISEASE-IDENTIFICATION
+BASE_DIR = os.path.dirname(__file__)  # PLANT-DISEASE-IDENTIFICATION folder
 TRAINED_MODEL_FOLDER = os.path.join(BASE_DIR, "trained_plant_disease_model")
+os.makedirs(TRAINED_MODEL_FOLDER, exist_ok=True)
+
 MODEL_PATH = os.path.join(TRAINED_MODEL_FOLDER, "model_weights.h5")
+MODEL_GDRIVE_ID = "16EUJfdr8yMbjRlyR_TKa7lJGNcki9pYC"
+MODEL_URL = f"https://drive.google.com/uc?id={MODEL_GDRIVE_ID}"
 
 # ---------------- MODEL LOADING ----------------
 @st.cache_resource(show_spinner=True)
 def load_model_safe():
     if not os.path.exists(MODEL_PATH):
-        st.error("Model file not found! Make sure model_weights.h5 exists in trained_plant_disease_model folder.")
-        st.stop()
+        st.info("Downloading model from Google Drive, please wait...")
+        gdown.download(MODEL_URL, MODEL_PATH, quiet=False)
     return tf.keras.models.load_model(MODEL_PATH)
 
 model = load_model_safe()
