@@ -1,40 +1,34 @@
-
 import streamlit as st
 import tensorflow as tf
 import numpy as np
 from PIL import Image
+import os
+
+# ---------- Base Directory ----------
+BASE_DIR = os.path.dirname(__file__)  # ensures paths work on Streamlit Cloud
 
 # ---------- Helper Functions ----------
 def model_prediction(test_image):
-    model = tf.keras.models.load_model("trained_plant_disease_model.keras")
-    image = tf.keras.preprocessing.image.load_img(test_image,target_size=(128,128))
+    # Load the model from the same folder as main.py
+    model_path = os.path.join(BASE_DIR, "trained_plant_disease_model.keras")
+    model = tf.keras.models.load_model(model_path)
+
+    image = tf.keras.preprocessing.image.load_img(test_image, target_size=(128,128))
     input_arr = tf.keras.preprocessing.image.img_to_array(image)
     input_arr = np.array([input_arr])
     predictions = model.predict(input_arr)
     return np.argmax(predictions)
 
 def crop_recommendation(n, p, k, temp, hum, ph, rainfall):
-    # Replace this logic with your trained crop recommendation model
-    # Example placeholder logic
     if n>50 and p>50 and k>50:
         return "Wheat"
     else:
         return "Rice"
 
 def fertilizer_recommendation(n, p, k):
-    # Simple rule-based recommendation
-    if n<50:
-        n_fert = "Nitrogen fertilizer recommended"
-    else:
-        n_fert = "Nitrogen level sufficient"
-    if p<30:
-        p_fert = "Phosphorus fertilizer recommended"
-    else:
-        p_fert = "Phosphorus level sufficient"
-    if k<40:
-        k_fert = "Potassium fertilizer recommended"
-    else:
-        k_fert = "Potassium level sufficient"
+    n_fert = "Nitrogen fertilizer recommended" if n<50 else "Nitrogen level sufficient"
+    p_fert = "Phosphorus fertilizer recommended" if p<30 else "Phosphorus level sufficient"
+    k_fert = "Potassium fertilizer recommended" if k<40 else "Potassium level sufficient"
     return n_fert, p_fert, k_fert
 
 # ---------- Sidebar ----------
@@ -49,8 +43,14 @@ app_mode = st.sidebar.selectbox("Select Page", [
 # ---------- HOME PAGE ----------
 if app_mode == "HOME":
     st.markdown("<h1 style='text-align: center;'>Welcome to FarmAssistX</h1>", unsafe_allow_html=True)
-    img = Image.open("Diseases.png")
-    st.image(img)
+
+    # Open Diseases.png safely
+    img_path = os.path.join(BASE_DIR, "Diseases.png")
+    if os.path.exists(img_path):
+        img = Image.open(img_path)
+        st.image(img)
+    else:
+        st.warning("Diseases.png not found. Please add it to the same folder as main.py")
 
 # ---------- CROP RECOMMENDATION ----------
 elif app_mode == "CROP RECOMMENDATION":
