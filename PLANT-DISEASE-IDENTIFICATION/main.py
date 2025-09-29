@@ -3,49 +3,41 @@ import tensorflow as tf
 import numpy as np
 from PIL import Image
 import os
-import requests
-import tempfile
+from tensorflow.keras.preprocessing import image as keras_image
 
 # ---------- Base Directory ----------
 BASE_DIR = os.path.dirname(__file__)
 
+# ---------- Load Model ----------
+model_path = os.path.join(BASE_DIR, "trained_plant_disease_model", "model_weights.h5")
+model = tf.keras.models.load_model(model_path)
+
 # ---------- Helper Functions ----------
-def load_model_from_url(url):
-    """Download and load Keras model from a URL"""
-    r = requests.get(url)
-    tmp_file = tempfile.NamedTemporaryFile(delete=False)
-    tmp_file.write(r.content)
-    tmp_file.close()
-    model = tf.keras.models.load_model(tmp_file.name)
-    return model
-
 def model_prediction(uploaded_file):
-    # Load model (hosted on GitHub or cloud)
-    model_url = "YOUR_RAW_GITHUB_MODEL_LINK"  # replace with your model raw link
-    model = load_model_from_url(model_url)
-
-    # Save uploaded file in test folder
+    """Predict plant disease from uploaded image"""
+    # Save uploaded image in test folder
     test_folder = os.path.join(BASE_DIR, "test")
     os.makedirs(test_folder, exist_ok=True)
     temp_path = os.path.join(test_folder, uploaded_file.name)
     with open(temp_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
 
-    # Load and preprocess image
-    image = tf.keras.preprocessing.image.load_img(temp_path, target_size=(128,128))
-    input_arr = tf.keras.preprocessing.image.img_to_array(image)
+    # Preprocess image
+    img = keras_image.load_img(temp_path, target_size=(128,128))
+    input_arr = keras_image.img_to_array(img)
     input_arr = np.array([input_arr])
     predictions = model.predict(input_arr)
     return np.argmax(predictions)
 
 def crop_recommendation(n, p, k, temp, hum, ph, rainfall):
-    # Placeholder logic
+    """Simple placeholder crop recommendation"""
     if n>50 and p>50 and k>50:
         return "Wheat"
     else:
         return "Rice"
 
 def fertilizer_recommendation(n, p, k):
+    """Simple fertilizer suggestion"""
     n_fert = "Nitrogen fertilizer recommended" if n<50 else "Nitrogen level sufficient"
     p_fert = "Phosphorus fertilizer recommended" if p<30 else "Phosphorus level sufficient"
     k_fert = "Potassium fertilizer recommended" if k<40 else "Potassium level sufficient"
@@ -92,7 +84,6 @@ elif app_mode == "PLANT DISEASE DETECTION":
     test_image = st.file_uploader("Choose an Image:")
 
     if st.button("Show Image") and test_image:
-        # Save uploaded file in test folder
         test_folder = os.path.join(BASE_DIR, "test")
         os.makedirs(test_folder, exist_ok=True)
         temp_path = os.path.join(test_folder, test_image.name)
